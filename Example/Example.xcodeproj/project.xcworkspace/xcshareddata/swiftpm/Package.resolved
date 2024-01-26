@@ -1,0 +1,32 @@
+{
+  "pins" : [
+    {
+      "identity" : "lookinserver",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/QMUI/LookinServer.git",
+      "state" : {
+        "revision" : "b37495ea751dcde98deb3ccc93e556640ffb0eac",
+        "version" : "1.2.6"
+      }
+    },
+    {
+      "identity" : "mjrefresh",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/CoderMJLee/MJRefresh.git",
+      "state" : {
+        "revision" : "b9c5464d5480001b7e3b0cdf4c34f4a683d3acd5",
+        "version" : "3.7.6"
+      }
+    },
+    {
+      "identity" : "pinlayout",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/layoutBox/PinLayout.git",
+      "state" : {
+        "revision" : "8eaa3a15e4dcabaca4c95aea4c0ff0c9b4a67213",
+        "version" : "1.10.5"
+      }
+    }
+  ],
+  "version" : 2
+}
