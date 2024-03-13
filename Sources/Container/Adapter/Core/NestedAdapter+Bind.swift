@@ -311,6 +311,8 @@ extension NestedAdapter {
         for visibleSectionController in visibleSectionControllers {
             visibleSectionController.scrollDelegate?.scrollViewWillBeginDragging?(scrollView)
         }
+        // 刷新指示器
+        reloadScrollIndicator(scrollView)
     }
 
     /// 容器停止拖拽
@@ -318,10 +320,6 @@ extension NestedAdapter {
     ///   - scrollView: 容器
     ///   - decelerate: 是否进入减速
     public func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
-        if !decelerate {
-            // 刷新指示器
-            reloadScrollIndicator(scrollView)
-        }
         // adapter滚动代理回调
         scrollViewDelegate?.scrollViewDidEndDragging?(scrollView, willDecelerate: decelerate)
         // 回调当前展示的 headerFooterController代理
@@ -334,6 +332,8 @@ extension NestedAdapter {
         for visibleSectionController in visibleSectionControllers {
             visibleSectionController.scrollDelegate?.scrollViewDidEndDragging?(scrollView, willDecelerate: decelerate)
         }
+        // 刷新指示器
+        reloadScrollIndicator(scrollView)
     }
 
     /// 容器停止减速
@@ -397,6 +397,8 @@ extension NestedAdapter {
         for visibleSectionController in visibleSectionControllers {
             visibleSectionController.scrollDelegate?.scrollViewDidEndScrollingAnimation?(scrollView)
         }
+        // 刷新指示器
+        reloadScrollIndicator(scrollView)
     }
 
     /// 更新指示器偏移

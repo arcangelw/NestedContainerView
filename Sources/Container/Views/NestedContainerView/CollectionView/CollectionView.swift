@@ -163,15 +163,23 @@ public final class CollectionView: UICollectionView, NestedContainerScrollView, 
         return super.forwardingTarget(for: aSelector)
     }
 
+    /// 内容容器
+    ///
+    /// - Parameter section: 所在section
+    public func contentContainerView(at section: Int) -> UIView? {
+        return cellForItem(at: .init(item: 0, section: section))
+    }
+
     /// 重置布局使其失效
     /// - Parameters:
     ///   - completion: 完成回调
-    public func invalidateLayout(completion: ((_ finished: Bool) -> Void)?) {
-        UIView.animate(withDuration: 0, delay: 0, options: [], animations: {
+    public func invalidateLayout(completion: ((_ finished: Bool) -> Void)? = nil) {
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        performBatchUpdates({
             self.collectionViewLayout.invalidateLayout()
-        }, completion: {
-            completion?($0)
-        })
+        }, completion: completion)
+        CATransaction.commit()
     }
 
     /// 使指定的一组 section 的布局失效并触发重置
@@ -189,11 +197,12 @@ public final class CollectionView: UICollectionView, NestedContainerScrollView, 
         let cls = type(of: collectionViewLayout).invalidationContextClass as! UICollectionViewLayoutInvalidationContext.Type
         let context = cls.init()
         context.invalidateItems(at: items)
-        UIView.animate(withDuration: 0, delay: 0, options: [], animations: {
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        performBatchUpdates({
             self.collectionViewLayout.invalidateLayout(with: context)
-        }, completion: {
-            completion?($0)
-        })
+        }, completion: completion)
+        CATransaction.commit()
     }
 
     /// 绑定到嵌套容器
@@ -244,7 +253,7 @@ extension CollectionView {
         let item = NSCollectionLayoutItem(layoutSize: .init(widthDimension: .fractionalWidth(1), heightDimension: .fractionalHeight(1)))
 
         // 创建一个group，垂直布局，高度为content的高度
-        let group = NSCollectionLayoutGroup.vertical(layoutSize: .init(widthDimension: .fractionalWidth(1), heightDimension: .absolute(max(0.5, content))), subitems: [item])
+        let group = NSCollectionLayoutGroup.vertical(layoutSize: .init(widthDimension: .fractionalWidth(1), heightDimension: .absolute(content)), subitems: [item])
 
         // 创建一个section布局
         let layoutSection = NSCollectionLayoutSection(group: group)

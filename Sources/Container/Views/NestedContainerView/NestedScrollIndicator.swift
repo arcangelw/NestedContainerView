@@ -12,7 +12,7 @@ final class NestedScrollIndicator: UIView {
     /// 指示器视图
     private(set) lazy var indicatorView: UIView = {
         let view = UIView(frame: indicatorFrame)
-        view.backgroundColor = .black.withAlphaComponent(0.7)
+        view.backgroundColor = .black.withAlphaComponent(0.3)
         view.layer.cornerRadius = 1.5
         view.alpha = 0
         return view
@@ -28,7 +28,7 @@ final class NestedScrollIndicator: UIView {
     private var currentOffset: CGFloat = 0
 
     /// 指示器位置尺寸
-    private var indicatorFrame: CGRect = .init(origin: .zero, size: .init(width: 3, height: 100))
+    private var indicatorFrame: CGRect = .init(origin: .zero, size: .init(width: 3, height: 10))
 
     /// 初始化方法
     override init(frame: CGRect) {
@@ -84,7 +84,7 @@ final class NestedScrollIndicator: UIView {
         guard contentHeight > 0 else { return }
 
         // 根据内容高度更新指示器的尺寸
-        indicatorFrame.size.height = max(100, bounds.height * (bounds.height / contentHeight))
+        indicatorFrame.size.height = max(10, bounds.height * (bounds.height / contentHeight))
         updateOffset(currentOffset)
     }
 

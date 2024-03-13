@@ -24,7 +24,7 @@ open class NestedSectionScrollProcessor {
     }
 
     /// 容器滚动视图
-    public internal(set) weak var containerScrollView: UIScrollView?
+    public internal(set) weak var containerScrollView: NestedContainerScrollView?
 
     /// 横向内容管理
     public weak var management: HorizontalNestedContentViewManagement?
@@ -40,11 +40,11 @@ open class NestedSectionScrollProcessor {
 
     /// 容器滚动
     /// - Parameter containerScrollView: 滚动容器视图
-    open func containerScrollViewDidScroll(_: UIScrollView) {}
+    open func containerScrollViewDidScroll(_: NestedContainerScrollView) {}
 
     /// 容器结束减速
     /// - Parameter containerScrollView: 滚动容器视图
-    open func containerScrollViewDidEndDecelerating(_: UIScrollView) {}
+    open func containerScrollViewDidEndDecelerating(_: NestedContainerScrollView) {}
 
     /// 内容滚动
     /// - Parameter embeddedScrollView: 滚动的内容视图

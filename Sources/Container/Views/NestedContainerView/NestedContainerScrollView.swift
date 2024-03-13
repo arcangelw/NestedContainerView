@@ -39,6 +39,11 @@ public protocol NestedContainerScrollView: UIScrollView {
     /// 容器尺寸变化
     var containerSizeDidChange: (() -> Void)? { get set }
 
+    /// 内容容器
+    ///
+    /// - Parameter section: 所在section
+    func contentContainerView(at section: Int) -> UIView?
+
     /// 刷新数据
     func reloadData()
 

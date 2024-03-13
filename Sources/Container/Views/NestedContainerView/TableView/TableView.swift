@@ -108,6 +108,13 @@ public final class TableView: UITableView, NestedContainerScrollView, UIGestureR
         return super.forwardingTarget(for: aSelector)
     }
 
+    /// 内容容器
+    ///
+    /// - Parameter section: 所在section
+    public func contentContainerView(at section: Int) -> UIView? {
+        return cellForRow(at: .init(row: 0, section: section))
+    }
+
     /// 使布局无效并重置
     ///
     /// - Parameters:

@@ -154,19 +154,10 @@ public class NestedAdapter: NSObject, NestedContainerContext {
     ///   - sectionController: 当前控制器
     public func embeddedScrollViewEvent(_ event: NestedEmbeddedScrollViewEvent, for sectionController: NestedSectionController) {
         guard !event.scrollView.isNestedContainerScrollView else { return }
-        let reloadIndicator: Bool
-        switch event {
-        case .didScroll(let scrollView):
+        if case .didScroll(let scrollView) = event {
             sectionMap.processor(for: sectionController)?.embeddedScrollViewDidScroll(scrollView)
-            reloadIndicator = true
-        case .willBeginDragging, .didEndDecelerating:
-            reloadIndicator = true
-        case .didEndDragging(_, let decelerate):
-            reloadIndicator = !decelerate
         }
-        if reloadIndicator {
-            reloadScrollIndicator(currentContainerView.scrollView)
-        }
+        reloadScrollIndicator(currentContainerView.scrollView)
     }
 
     /// 配置布局无效重置

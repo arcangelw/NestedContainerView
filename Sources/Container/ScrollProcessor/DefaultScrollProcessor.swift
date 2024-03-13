@@ -18,7 +18,7 @@ public final class DefaultScrollProcessor: NestedSectionScrollProcessor {
 
     /// 容器滚动
     /// - Parameter containerScrollView: 主容器
-    override public func containerScrollViewDidScroll(_ containerScrollView: UIScrollView) {
+    override public func containerScrollViewDidScroll(_ containerScrollView: NestedContainerScrollView) {
         guard
             trait.layoutAttributes.canSlidable,
             let embeddedScrollView = embeddedScrollView,

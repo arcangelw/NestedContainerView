@@ -124,7 +124,7 @@ final class NestedSectionMap {
     ///   - traits: 新的分区特征数组。
     ///   - controllers: 新的嵌套分区控制器数组。
     ///   - containerScrollView: 滚动容器
-    func update(traits: [SectionTrait], controllers: [NestedSectionController], for containerScrollView: UIScrollView) {
+    func update(traits: [SectionTrait], controllers: [NestedSectionController], for containerScrollView: NestedContainerScrollView) {
         NestedLogger.shared.assert(traits.count == controllers.count)
         reset()
         self.traits = traits

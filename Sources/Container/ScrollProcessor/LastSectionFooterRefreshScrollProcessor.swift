@@ -35,8 +35,8 @@ public class LastSectionFooterRefreshScrollProcessor: NestedSectionScrollProcess
 
     /// 容器滚动
     /// - Parameter containerScrollView: 主容器
-    override public func containerScrollViewDidScroll(_ containerScrollView: UIScrollView) {
-        guard let containerScrollView = containerScrollView as? NestedContainerScrollView, let embeddedScrollView = embeddedScrollView else { return }
+    override public func containerScrollViewDidScroll(_ containerScrollView: NestedContainerScrollView) {
+        guard let embeddedScrollView = embeddedScrollView else { return }
         guard isLastSection else {
             return containerScrollViewDidScroll(containerScrollView, embeddedScrollView: embeddedScrollView)
         }
@@ -67,7 +67,7 @@ public class LastSectionFooterRefreshScrollProcessor: NestedSectionScrollProcess
     /// 当内嵌滚动视图发生滚动时调用的方法
     /// - Parameter embeddedScrollView: 滚动的内容视图
     override public func embeddedScrollViewDidScroll(_ embeddedScrollView: UIScrollView) {
-        guard let containerScrollView = containerScrollView as? NestedContainerScrollView, isLastSection else { return }
+        guard let containerScrollView = containerScrollView, isLastSection else { return }
 
         if containerScrollView.contentOffset.y < containerScrollViewMaxContentOffsetY(containerScrollView, embeddedScrollView: embeddedScrollView) {
             // 如果containerScrollView的headerView还没有完全消失，则将内嵌滚动视图的contentOffset保持为最小值
@@ -83,22 +83,23 @@ public class LastSectionFooterRefreshScrollProcessor: NestedSectionScrollProcess
     /// 计算容器滚动视图的最大内容偏移量的Y坐标
     /// - Returns: 最大内容偏移量的Y坐标
     private func containerScrollViewMaxContentOffsetY(_ containerScrollView: NestedContainerScrollView, embeddedScrollView: UIScrollView) -> CGFloat {
-        guard
-            let embeddedSuperview = embeddedScrollView.superview,
-            embeddedScrollView.window != nil
-        else {
-            return trait.layoutAttributes.minY - trait.layoutAttributes.headerHeight
-        }
         // 转换嵌入scroll相对位置
-        let embeddedFrameY = embeddedSuperview.convert(embeddedScrollView.frame.origin, to: containerScrollView).y
-        return embeddedFrameY - trait.layoutAttributes.headerHeight
+        if let contentContainerView = containerScrollView.contentContainerView(at: section) {
+            let embeddedFrameY = contentContainerView.frame.minY - trait.layoutAttributes.headerHeight
+            return abs(embeddedFrameY - trait.layoutAttributes.minY) <= .onePixel ? trait.layoutAttributes.minY : embeddedFrameY
+        } else {
+            return trait.layoutAttributes.minY
+        }
     }
 
     /// 设置容器滚动视图的最大内容偏移量
     /// - Parameter containerScrollView: 容器滚动视图
     private func setContainerScrollViewToMaxContentOffsetY(_ containerScrollView: NestedContainerScrollView, embeddedScrollView: UIScrollView) {
         if !containerScrollView.callScrollsToTop {
-            containerScrollView.contentOffset = CGPoint(x: 0, y: containerScrollViewMaxContentOffsetY(containerScrollView, embeddedScrollView: embeddedScrollView))
+            let offset = CGPoint(x: 0, y: containerScrollViewMaxContentOffsetY(containerScrollView, embeddedScrollView: embeddedScrollView))
+            if offset != containerScrollView.contentOffset {
+                containerScrollView.contentOffset = offset
+            }
         }
     }
 
@@ -112,7 +113,10 @@ public class LastSectionFooterRefreshScrollProcessor: NestedSectionScrollProcess
     /// 设置嵌套滚动视图的内容偏移量为最小偏移量
     /// - Parameter embeddedScrollView: 嵌套滚动视图
     private func setEmbeddedScrollViewToMinContentOffsetY(_ embeddedScrollView: UIScrollView) {
-        embeddedScrollView.contentOffset = CGPoint(x: embeddedScrollView.contentOffset.x, y: minContentOffsetYInEmbeddedScrollView(embeddedScrollView))
+        let offset = CGPoint(x: embeddedScrollView.contentOffset.x, y: minContentOffsetYInEmbeddedScrollView(embeddedScrollView))
+        if offset != embeddedScrollView.contentOffset {
+            embeddedScrollView.contentOffset = offset
+        }
     }
 
     /// 非最后一组容器滚动

@@ -95,6 +95,12 @@ open class NestedSectionController: NSObject, NestedController {
         return nil
     }
 
+    /// 配置布局无效重置
+    /// - Parameter completion: 回调
+    public func invalidateLayout(completion: ((Bool) -> Void)? = nil) {
+        containerContext?.invalidateLayout(in: self, completion: completion)
+    }
+
     /// 内部滚动视图发生滚动时调用的方法
     ///
     /// - Parameter event: 嵌入式滚动视图事件
@@ -123,7 +129,7 @@ open class NestedSectionController: NSObject, NestedController {
     /// - Returns: 高度
     public func height(for mode: NestedContentHeightMode) -> CGFloat {
         switch mode {
-        case .absolute(let height): return height
+        case .absolute(let height): return max(0, height)
         case .filled: return filledHeight()
         case .fractionalHeight(let fractional): return ceil(containerSize().height * fractional)
         }
@@ -136,12 +142,12 @@ open class NestedSectionController: NSObject, NestedController {
     /// - Returns: 分区内容的高度。
     func sectionContentHeight() -> CGFloat {
         switch sectionContentHeightMode() {
-        case .fixed(let mode): return height(for: mode)
+        case .fixed(let mode): return max(.onePixel, height(for: mode))
         case .embedded(let mode, embeddedContentHeight: let contentHeight):
             if let mode = mode {
-                return height(for: mode)
+                return max(.onePixel, height(for: mode))
             } else {
-                return min(filledHeight(), max(0, ceil(contentHeight)))
+                return min(max(.onePixel, filledHeight()), max(.onePixel, ceil(contentHeight)))
             }
         }
     }
@@ -152,8 +158,8 @@ open class NestedSectionController: NSObject, NestedController {
     func embeddedScrollContentHeight() -> CGFloat {
         switch sectionContentHeightMode() {
         case .fixed(let mode): return height(for: mode)
-        case .embedded(let mode, embeddedContentHeight: let contentHeight):
-            return ceil(contentHeight)
+        case .embedded(_, embeddedContentHeight: let contentHeight):
+            return max(0, ceil(contentHeight))
         }
     }
 }
