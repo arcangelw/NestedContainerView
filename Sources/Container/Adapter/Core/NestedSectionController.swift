@@ -108,6 +108,18 @@ open class NestedSectionController: NSObject, NestedController {
         containerContext?.embeddedScrollViewEvent(event, for: self)
     }
 
+    /// 滚动容器到当前控制器
+    ///
+    /// - Parameters:
+    ///   - animated: 是否需要动画效果
+    ///   - completion: 滚动完成后的回调，参数为滚动是否完成的布尔值
+    public func scrollContainerToCurrentController(
+        animated: Bool = true,
+        completion: ((_ finished: Bool) -> Void)? = nil
+    ) {
+        containerContext?.scrollContainer(to: self, animated: animated, completion: completion)
+    }
+
     /// 容器尺寸
     public func containerSize() -> CGSize {
         guard let context = containerContext else {

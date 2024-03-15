@@ -15,6 +15,9 @@ public protocol NestedContainerScrollView: UIScrollView {
     /// 是否调用滚动到顶部方法
     var callScrollsToTop: Bool { get set }
 
+    /// 当前滚动位置
+    var currentScrollingPosition: NestedContainerScrollPosition? { get set }
+
     /// 返回嵌套容器的section数量
     var numberOfSections: Int { get }
 
@@ -60,6 +63,14 @@ public protocol NestedContainerScrollView: UIScrollView {
     ///   - completion: 重置完成后的回调闭包，接收一个布尔值参数表示重置是否完成
     func invalidateLayout(in sections: [Int], completion: ((_ finished: Bool) -> Void)?)
 
+    /// 滚动容器到指定位置
+    ///
+    /// - Parameters:
+    ///   - position: 容器滚动位置
+    ///   - animated: 是否需要动画效果
+    ///   - completion: 滚动完成后的回调，参数为滚动是否完成的布尔值
+    func scrollToPosition(_ position: NestedContainerScrollPosition, animated: Bool, completion: ((_ finished: Bool) -> Void)?)
+
     /// 将嵌套容器绑定到当前滚动容器
     ///
     /// - Parameter nestedContainerView: 要绑定的嵌套容器视图
@@ -77,6 +88,11 @@ extension NestedContainerScrollView {
         // 检查allScrollDelegates是否包含aSelector，并且检查nestedContainerView的delegate是否响应aSelector
         return allScrollDelegates.contains(aSelector) && nestedContainerView?.delegate?.responds(to: aSelector) ?? false
     }
+
+    /// 正在定位跳转
+    public var isScrollingToPosition: Bool {
+        return currentScrollingPosition != nil
+    }
 }
 
 /// 需要转发的UIScrollView代理方法列表
@@ -88,7 +104,6 @@ private let allScrollDelegates: [Selector] = [
     #selector(UIScrollViewDelegate.scrollViewDidEndDragging(_:willDecelerate:)),
     #selector(UIScrollViewDelegate.scrollViewWillBeginDecelerating(_:)),
     #selector(UIScrollViewDelegate.scrollViewDidEndDecelerating(_:)),
-    #selector(UIScrollViewDelegate.scrollViewDidEndScrollingAnimation(_:)),
     #selector(UIScrollViewDelegate.scrollViewShouldScrollToTop(_:)),
     #selector(UIScrollViewDelegate.scrollViewDidScrollToTop(_:)),
     #selector(UIScrollViewDelegate.scrollViewDidChangeAdjustedContentInset(_:))

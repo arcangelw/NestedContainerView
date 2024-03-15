@@ -62,8 +62,13 @@ open class NestedContainerView: UIView {
     // MARK: - Public Methods
 
     override public init(frame: CGRect) {
+        var frame = frame
+        if frame.size == .zero {
+            frame.size = UIScreen.main.bounds.size
+        }
         self.scrollView = type(of: self).containerScrollViewClass.init()
         super.init(frame: frame)
+        scrollView.frame = bounds
         scrollView.bind(self)
         scrollView.containerSizeDidChange = { [weak self] in
             self?.nestedAdapter?.containerSizeDidChange()

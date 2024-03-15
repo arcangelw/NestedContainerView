@@ -45,6 +45,21 @@ open class NestedHeaderFooterViewController: NSObject, NestedController {
         fatalError()
     }
 
+    /// 配置布局无效重置
+    /// - Parameter completion: 回调
+    public func invalidateLayout(completion: ((Bool) -> Void)? = nil) {
+        containerContext?.invalidateLayout(in: self, completion: completion)
+    }
+
+    /// 滚动容器到当前控制器
+    ///
+    /// - Parameters:
+    ///   - animated: 是否需要动画效果
+    ///   - completion: 滚动完成后的回调，参数为滚动是否完成的布尔值
+    public func scrollContainerToCurrentController(animated: Bool = false, completion: ((_ finished: Bool) -> Void)? = nil) {
+        containerContext?.scrollContainer(to: self, animated: animated, completion: completion)
+    }
+
     /// 容器尺寸
     public func containerSize() -> CGSize {
         guard let context = containerContext else {

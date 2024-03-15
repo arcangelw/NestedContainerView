@@ -153,7 +153,8 @@ public class NestedAdapter: NSObject, NestedContainerContext {
     ///   - event: 嵌入式滚动视图事件
     ///   - sectionController: 当前控制器
     public func embeddedScrollViewEvent(_ event: NestedEmbeddedScrollViewEvent, for sectionController: NestedSectionController) {
-        guard !event.scrollView.isNestedContainerScrollView else { return }
+        let containerScrollView = currentContainerView.scrollView
+        guard event.scrollView !== containerScrollView, !containerScrollView.isScrollingToPosition else { return }
         if case .didScroll(let scrollView) = event {
             sectionMap.processor(for: sectionController)?.embeddedScrollViewDidScroll(scrollView)
         }
@@ -181,6 +182,42 @@ public class NestedAdapter: NSObject, NestedContainerContext {
             guard let self = self else { return }
             self.queuedInvalidateLayout(in: headerFooterViewController, completion: completion)
         }
+    }
+
+    /// 滚动容器到指定的控制器
+    ///
+    /// - Parameters:
+    ///   - sectionController: 要滚动到的控制器
+    ///   - animated: 是否需要动画效果
+    ///   - completion: 滚动完成后的回调，参数为滚动是否完成的布尔值
+    public func scrollContainer(to sectionController: NestedSectionController, animated: Bool = true, completion: ((_ finished: Bool) -> Void)? = nil) {
+        guard let targetSection = section(for: sectionController) else {
+            completion?(false)
+            return
+        }
+        currentContainerView.scrollView.scrollToPosition(.section(targetSection), animated: animated, completion: completion)
+    }
+
+    /// 滚动容器到指定的头部/尾部视图控制器
+    ///
+    /// - Parameters:
+    ///   - headerFooterViewController: 要滚动到的头部/尾部视图控制器
+    ///   - animated: 是否需要动画效果
+    ///   - completion: 滚动完成后的回调，参数为滚动是否完成的布尔值
+    public func scrollContainer(to headerFooterViewController: NestedHeaderFooterViewController, animated: Bool, completion: ((_ finished: Bool) -> Void)?) {
+        guard !currentContainerView.scrollView.isScrollingToPosition else {
+            NestedLogger.shared.warn("containerScrollView isScrollingToPosition")
+            completion?(false)
+            return
+        }
+        let position: NestedContainerScrollPosition
+        switch headerFooterViewController.style {
+        case .header:
+            position = .header
+        case .footer:
+            position = .footer
+        }
+        currentContainerView.scrollView.scrollToPosition(position, animated: animated, completion: completion)
     }
 
     /// 适配器刷新

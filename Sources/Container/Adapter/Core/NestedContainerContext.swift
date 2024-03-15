@@ -49,6 +49,22 @@ public protocol NestedContainerContext: AnyObject {
     ///   - headerFooterViewController: 需要配置的页眉/页脚视图控制器
     ///   - completion: 配置完成后的回调
     func invalidateLayout(in headerFooterViewController: NestedHeaderFooterViewController, completion: ((_ finished: Bool) -> Void)?)
+
+    /// 滚动容器到指定的控制器
+    ///
+    /// - Parameters:
+    ///   - sectionController: 要滚动到的控制器
+    ///   - animated: 是否需要动画效果
+    ///   - completion: 滚动完成后的回调，参数为滚动是否完成的布尔值
+    func scrollContainer(to sectionController: NestedSectionController, animated: Bool, completion: ((_ finished: Bool) -> Void)?)
+
+    /// 滚动容器到指定的头部/尾部视图控制器
+    ///
+    /// - Parameters:
+    ///   - headerFooterViewController: 要滚动到的头部/尾部视图控制器
+    ///   - animated: 是否需要动画效果
+    ///   - completion: 滚动完成后的回调，参数为滚动是否完成的布尔值
+    func scrollContainer(to headerFooterViewController: NestedHeaderFooterViewController, animated: Bool, completion: ((_ finished: Bool) -> Void)?)
 }
 
 // swiftlint:enable line_length

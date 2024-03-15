@@ -287,10 +287,20 @@ extension NestedAdapter {
             visibleHeaderFooterController.scrollDelegate?.scrollViewDidScroll?(scrollView)
         }
         // 回调当前展示的 sectionController代理 计算嵌套内容滚动偏移
+        let containerScrollView = currentContainerView.scrollView
+        let isScrollingToPosition = containerScrollView.isScrollingToPosition
         let visibleSectionControllers = visibleSectionControllers
         for visibleSectionController in visibleSectionControllers {
             visibleSectionController.scrollDelegate?.scrollViewDidScroll?(scrollView)
-            sectionMap.processor(for: visibleSectionController)?.containerScrollViewDidScroll(currentContainerView.scrollView)
+            if !isScrollingToPosition {
+                sectionMap.processor(for: visibleSectionController)?.containerScrollViewDidScroll(containerScrollView)
+            }
+        }
+        if isScrollingToPosition, let position = containerScrollView.currentScrollingPosition {
+            let traits = sectionMap.traits
+            for trait in traits {
+                sectionMap.processor(for: trait)?.containerScrollViewDidScroll(containerScrollView, to: position)
+            }
         }
         // 刷新指示器
         reloadScrollIndicator(scrollView)
@@ -350,7 +360,9 @@ extension NestedAdapter {
         let visibleSectionControllers = visibleSectionControllers
         for visibleSectionController in visibleSectionControllers {
             visibleSectionController.scrollDelegate?.scrollViewDidEndDecelerating?(scrollView)
-            sectionMap.processor(for: visibleSectionController)?.containerScrollViewDidEndDecelerating(currentContainerView.scrollView)
+            if !currentContainerView.scrollView.isScrollingToPosition {
+                sectionMap.processor(for: visibleSectionController)?.containerScrollViewDidEndDecelerating(currentContainerView.scrollView)
+            }
         }
         // 刷新指示器
         reloadScrollIndicator(scrollView)
@@ -409,7 +421,7 @@ extension NestedAdapter {
         // 容器有section展示 计算section 嵌套内容整体偏移
         // 容器没有section展示 场景对应footerView高度超过可视 取出最后一组section计算整体嵌套
         let lastSection = currentContainerView.scrollView.numberOfSections - 1
-        let section = currentContainerView.scrollView.sectionsForVisibleContentViews.sorted().first ?? lastSection
+        let section = currentContainerView.scrollView.sectionsForVisibleContentViews.first ?? lastSection
         if section >= 0, let trait = sectionMap.trait(for: section) {
             let embeddedScrollView = sectionController(for: section)?.sectionEmbeddedScrollView()
             let offset = trait.layoutAttributes.indicatorOffset(scrollView, embeddedScrollView: embeddedScrollView)

@@ -14,12 +14,18 @@ public final class TableView: UITableView, NestedContainerScrollView, UIGestureR
     /// 是否调用滚动到顶部方法
     public var callScrollsToTop: Bool = false
 
+    /// 当前滚动位置
+    public var currentScrollingPosition: NestedContainerScrollPosition?
+
     /// 当前可见内容的显示的section
     public var sectionsForVisibleContentViews: [Int] {
-        guard let sections = indexPathsForVisibleRows?.map(\.section) else {
-            return []
+        var sections: Set<Int> = []
+        for cell in visibleCells {
+            if let indexPath = indexPath(for: cell) {
+                sections.insert(indexPath.section)
+            }
         }
-        return Array(Set(sections))
+        return Array(sections).sorted(by: <)
     }
 
     /// 当前可见的内容视图
@@ -57,6 +63,9 @@ public final class TableView: UITableView, NestedContainerScrollView, UIGestureR
     /// 绑定的嵌套容器
     public private(set) weak var nestedContainerView: NestedContainerView?
 
+    /// 滚动定位动画完成回调
+    private var scrollToPositionAnimatedCompletionBlock: (() -> Void)?
+
     /// 初始化方法
     public init() {
         super.init(frame: .zero, style: .plain)
@@ -72,6 +81,12 @@ public final class TableView: UITableView, NestedContainerScrollView, UIGestureR
         if #available(iOS 15.0, *) {
             sectionHeaderTopPadding = 0
         }
+        rowHeight = 0
+        estimatedRowHeight = 0
+        sectionHeaderHeight = 0
+        estimatedSectionHeaderHeight = 0
+        sectionFooterHeight = 0
+        estimatedSectionFooterHeight = 0
         delegate = self
         dataSource = self
     }
@@ -120,11 +135,15 @@ public final class TableView: UITableView, NestedContainerScrollView, UIGestureR
     /// - Parameters:
     ///   - completion: 完成回调
     public func invalidateLayout(completion: ((_ finished: Bool) -> Void)?) {
-        UIView.animate(withDuration: 0, delay: 0, options: [], animations: {
-            self.performBatchUpdates(nil)
-        }, completion: {
-            completion?($0)
-        })
+//        UIView.animate(withDuration: 0, delay: 0, options: [], animations: {
+//            self.performBatchUpdates(nil)
+//        }, completion: {
+//            completion?($0)
+//        })
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        performBatchUpdates(nil, completion: completion)
+        CATransaction.commit()
     }
 
     /// 使指定的一组 section 的布局失效并触发重置
@@ -133,11 +152,58 @@ public final class TableView: UITableView, NestedContainerScrollView, UIGestureR
     ///   - sections: 需要使布局失效的 section 的索引数组
     ///   - completion: 重置完成后的回调闭包，接收一个布尔值参数表示重置是否完成
     public func invalidateLayout(in sections: [Int], completion: ((_ finished: Bool) -> Void)?) {
-        UIView.animate(withDuration: 0, delay: 0, options: [], animations: {
-            self.performBatchUpdates(nil)
-        }, completion: {
-            completion?($0)
-        })
+//        UIView.animate(withDuration: 0, delay: 0, options: [], animations: {
+//            self.performBatchUpdates(nil)
+//        }, completion: {
+//            completion?($0)
+//        })
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        performBatchUpdates(nil, completion: completion)
+        CATransaction.commit()
+    }
+
+    /// 滚动容器到指定位置
+    ///
+    /// - Parameters:
+    ///   - position: 容器滚动位置
+    ///   - animated: 是否需要动画效果
+    ///   - completion: 滚动完成后的回调，参数为滚动是否完成的布尔值
+    public func scrollToPosition(_ position: NestedContainerScrollPosition, animated: Bool, completion: ((_ finished: Bool) -> Void)?) {
+        var off = contentOffset
+        switch position {
+        case .section(let section) where section < numberOfSections:
+            currentScrollingPosition = position
+            let minY = rect(forSection: section).minY
+            let maxOffsetY = contentSize.height - bounds.height
+            off.y = min(minY, maxOffsetY)
+        case .header:
+            currentScrollingPosition = position
+            off.y = -contentInset.top
+        case .footer:
+            currentScrollingPosition = position
+            let maxOffsetY = contentSize.height - bounds.height
+            if let minY = footerView?.frame.minY {
+                off.y = min(minY, maxOffsetY)
+            } else {
+                off.y = maxOffsetY
+            }
+        default:
+            completion?(false)
+            return
+        }
+        scrollToPositionAnimatedCompletionBlock = {
+            self.currentScrollingPosition = nil
+            completion?(true)
+        }
+        let hasChange = abs(off.y - contentOffset.y) > .onePixel
+        if hasChange {
+            setContentOffset(off, animated: animated)
+        }
+        if !animated || !hasChange {
+            scrollToPositionAnimatedCompletionBlock?()
+            scrollToPositionAnimatedCompletionBlock = nil
+        }
     }
 
     /// 绑定到嵌套容器
@@ -230,6 +296,13 @@ extension TableView: UITableViewDelegate {
             return nil
         }
         return (nestedContainerView, delegate)
+    }
+
+    /// 完成动画
+    public func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {
+        scrollToPositionAnimatedCompletionBlock?()
+        scrollToPositionAnimatedCompletionBlock = nil
+        findDelegate()?.delegate.scrollViewDidEndScrollingAnimation?(scrollView)
     }
 
     /// 返回悬浮的 headerView

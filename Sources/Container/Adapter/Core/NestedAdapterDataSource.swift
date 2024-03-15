@@ -44,4 +44,25 @@ public protocol NestedAdapterDataSource: AnyObject {
     func emptyView(for nestedAdapter: NestedAdapter) -> UIView?
 }
 
+/// 默认实现
+extension NestedAdapterDataSource {
+    /// 返回需要展示的HeaderView控制器。
+    ///
+    /// - Parameter nestedAdapter: 当前适配器。
+    /// - Returns: 需要展示的HeaderView控制器，如果不需要展示则返回 `nil`。
+    public func headerController(for nestedAdapter: NestedAdapter) -> NestedHeaderFooterViewController? { return nil }
+
+    /// 返回需要展示的FooterView控制器。
+    ///
+    /// - Parameter nestedAdapter: 当前适配器。
+    /// - Returns: 需要展示的FooterView控制器，如果不需要展示则返回 `nil`。
+    public func footerController(for nestedAdapter: NestedAdapter) -> NestedHeaderFooterViewController? { return nil }
+
+    /// 返回适配器没有内容时展示的空页面视图。
+    ///
+    /// - Parameter nestedAdapter: 当前适配器。
+    /// - Returns: 当适配器没有内容时展示的空页面视图。
+    public func emptyView(for nestedAdapter: NestedAdapter) -> UIView? { return nil }
+}
+
 // swiftlint:enable line_length

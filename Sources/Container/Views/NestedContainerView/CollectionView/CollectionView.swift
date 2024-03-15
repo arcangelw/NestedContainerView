@@ -14,9 +14,12 @@ public final class CollectionView: UICollectionView, NestedContainerScrollView, 
     /// 是否调用滚动到顶部方法
     public var callScrollsToTop: Bool = false
 
+    /// 当前滚动位置
+    public var currentScrollingPosition: NestedContainerScrollPosition?
+
     /// 当前展示内容的显示的section
     public var sectionsForVisibleContentViews: [Int] {
-        return .init(Set(indexPathsForVisibleItems.map(\.section)))
+        return .init(Set(indexPathsForVisibleItems.map(\.section))).sorted(by: <)
     }
 
     /// 当前显示的内容视图
@@ -79,7 +82,7 @@ public final class CollectionView: UICollectionView, NestedContainerScrollView, 
     private var headerReuseIdentifiers: Set<String> = .init()
     /// 已注册footer重用标识
     private var footerReuseIdentifiers: Set<String> = .init()
-    private enum Kind {
+    enum Kind {
         /// headerView占位
         static let headerViewPlaceholder = "Kind.headerViewPlaceholder"
         /// footerView占位
@@ -95,6 +98,9 @@ public final class CollectionView: UICollectionView, NestedContainerScrollView, 
 
     /// contentSize 监听
     private var observation: NSKeyValueObservation?
+
+    /// 滚动定位动画完成回调
+    private var scrollToPositionAnimatedCompletionBlock: (() -> Void)?
 
     /// 初始化方法
     public init() {
@@ -173,7 +179,7 @@ public final class CollectionView: UICollectionView, NestedContainerScrollView, 
     /// 重置布局使其失效
     /// - Parameters:
     ///   - completion: 完成回调
-    public func invalidateLayout(completion: ((_ finished: Bool) -> Void)? = nil) {
+    public func invalidateLayout(completion: ((_ finished: Bool) -> Void)?) {
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         performBatchUpdates({
@@ -203,6 +209,57 @@ public final class CollectionView: UICollectionView, NestedContainerScrollView, 
             self.collectionViewLayout.invalidateLayout(with: context)
         }, completion: completion)
         CATransaction.commit()
+    }
+
+    /// 滚动容器到指定位置
+    ///
+    /// - Parameters:
+    ///   - position: 容器滚动位置
+    ///   - animated: 是否需要动画效果
+    ///   - completion: 滚动完成后的回调，参数为滚动是否完成的布尔值
+    public func scrollToPosition(_ position: NestedContainerScrollPosition, animated: Bool, completion: ((_ finished: Bool) -> Void)?) {
+        var off = contentOffset
+        switch position {
+        case .section(let section) where section < numberOfSections:
+            guard
+                let find = findDelegate(),
+                let itemAttribute = layoutAttributesForItem(at: .init(item: 0, section: section))
+            else {
+                completion?(false)
+                return
+            }
+            currentScrollingPosition = position
+            let minY = itemAttribute.frame.minY - find.delegate.nestedContainerView!(find.containerView, heightForHeaderInSection: section)
+            let maxOffsetY = collectionViewLayout.collectionViewContentSize.height - bounds.height
+            off.y = min(minY, maxOffsetY)
+        case .header:
+            currentScrollingPosition = position
+            off.y = -contentInset.top
+        case .footer:
+            currentScrollingPosition = position
+            let maxOffsetY = collectionViewLayout.collectionViewContentSize.height - bounds.height
+            if let minY = footerView?.frame.minY {
+                off.y = min(minY, maxOffsetY)
+            } else {
+                off.y = maxOffsetY
+            }
+        default:
+            completion?(false)
+            return
+        }
+
+        scrollToPositionAnimatedCompletionBlock = {
+            self.currentScrollingPosition = nil
+            completion?(true)
+        }
+        let hasChange = abs(off.y - contentOffset.y) > .onePixel
+        if hasChange {
+            setContentOffset(off, animated: animated)
+        }
+        if !animated || !hasChange {
+            scrollToPositionAnimatedCompletionBlock?()
+            scrollToPositionAnimatedCompletionBlock = nil
+        }
     }
 
     /// 绑定到嵌套容器
@@ -265,6 +322,7 @@ extension CollectionView {
         if isFirst, let headerView = headerView {
             // 使用空白的ReusableView作为占位，提供一个占位空间给headerView
             let headerItem = NSCollectionLayoutBoundarySupplementaryItem(layoutSize: .init(widthDimension: .fractionalWidth(1), heightDimension: .absolute(headerView.frame.height + header)), elementKind: Kind.headerViewPlaceholder, alignment: .top)
+            headerItem.zIndex = -1
             boundarySupplementaryItems.append(headerItem)
         }
 
@@ -415,6 +473,13 @@ extension CollectionView: UICollectionViewDelegate {
             return nil
         }
         return (nestedContainerView, delegate)
+    }
+
+    /// 完成动画
+    public func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {
+        scrollToPositionAnimatedCompletionBlock?()
+        scrollToPositionAnimatedCompletionBlock = nil
+        findDelegate()?.delegate.scrollViewDidEndScrollingAnimation?(scrollView)
     }
 
     // MARK: - UICollectionViewDelegate

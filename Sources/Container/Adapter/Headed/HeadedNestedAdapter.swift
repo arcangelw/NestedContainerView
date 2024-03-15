@@ -54,6 +54,11 @@ public final class HeadedNestedAdapter: NestedAdapter {
     private let headedHeaderController = HeadedNestedHeaderViewController()
 
     /// 嵌套内容控制器
+    public var nestedSectionController: NestedSectionController {
+        return headedContentController
+    }
+
+    /// 嵌套内容控制器
     private let headedContentController = HeadedNestedSectionController()
 
     private var scrollProcessor: HeadedScrollProcessor?
