@@ -7,10 +7,12 @@
 
 import UIKit
 
+// swiftlint:disable line_length
+
 /// 嵌套滚动容器协议
 public protocol NestedContainerScrollView: UIScrollView {
     /// 默认初始化
-    init()
+    init(size: CGSize)
 
     /// 是否调用滚动到顶部方法
     var callScrollsToTop: Bool { get set }
@@ -115,3 +117,5 @@ extension UIScrollView {
         return self is NestedContainerScrollView
     }
 }
+
+// swiftlint:enable line_length

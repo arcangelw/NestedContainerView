@@ -28,17 +28,17 @@ extension CollectionReusableViewWrapper {
             contentView.addSubview(view)
         }
         // 如果内容视图的尺寸不为零，则将传入的视图的frame设置为与内容视图相同的尺寸
-        guard contentView.bounds.size != .zero else { return }
-        if view.frame != contentView.bounds {
-            view.frame = contentView.bounds
+        guard bounds.size != .zero else { return }
+        if view.frame != bounds {
+            view.frame = bounds
         }
     }
 
     /// 视图布局变化
     fileprivate func layout() {
-        // 如果绑定的视图的frame与内容视图的bounds不同，则将绑定的视图的frame设置为与内容视图相同的尺寸
-        if bindView?.frame != contentView.bounds {
-            bindView?.frame = contentView.bounds
+        // 如果绑定的视图的frame与cell的bounds不同，则将绑定的视图的frame设置为与内容视图相同的尺寸
+        if bindView?.frame != bounds {
+            bindView?.frame = bounds
         }
     }
 }

@@ -67,6 +67,20 @@ public class NestedAdapter: NSObject, NestedContainerContext {
         }
     }
 
+    /// 用于判断是否允许检查节特性的条件闭包
+    public var allowedToCheckSectionTraitCondition: () -> Bool = { true }
+
+    /// 是否启用检查节特性
+    public var isCheckSectionTraitEnable: Bool = false {
+        didSet {
+            if isCheckSectionTraitEnable {
+                SectionTraitTransaction.addCheck(self)
+            } else {
+                SectionTraitTransaction.removeCheck(self)
+            }
+        }
+    }
+
     // MARK: - internal
 
     /// 当前容器视图
@@ -94,6 +108,8 @@ public class NestedAdapter: NSObject, NestedContainerContext {
     var isDisplayHeader = false
     /// 是否显示 footerView
     var isDisplayFooter = false
+    /// 是否允许检查内容特性
+    var isAllowedToCheckSectionTrait = false
 
     /// 显示视图与 section 控制器的映射表
     let viewToControllerMap = NSMapTable<UIView, NestedSectionController>.init(keyOptions: [.strongMemory, .objectPointerPersonality], valueOptions: .strongMemory)
@@ -111,6 +127,12 @@ public class NestedAdapter: NSObject, NestedContainerContext {
         super.init()
         OnceDispatcher.dispatch {
             Swizzling.hookUIKit()
+        }
+    }
+
+    deinit {
+        if isCheckSectionTraitEnable {
+            SectionTraitTransaction.removeCheck(self)
         }
     }
 
@@ -133,11 +155,7 @@ public class NestedAdapter: NSObject, NestedContainerContext {
 
     /// 容器的滚动特征信息
     public var scrollingTrait: NestedContainerScrollingTrait {
-        return .init(
-            isTracking: currentContainerView.scrollView.isTracking,
-            isDragging: currentContainerView.scrollView.isDragging,
-            isDecelerating: currentContainerView.scrollView.isDecelerating
-        )
+        return .init(containerScrollView: currentContainerView.scrollView)
     }
 
     /// 获取容器内占用的尺寸
@@ -195,7 +213,12 @@ public class NestedAdapter: NSObject, NestedContainerContext {
             completion?(false)
             return
         }
-        currentContainerView.scrollView.scrollToPosition(.section(targetSection), animated: animated, completion: completion)
+        isAllowedToCheckSectionTrait = false
+        currentContainerView.scrollView.scrollToPosition(.section(targetSection), animated: animated) { [weak self] finished in
+            guard let self = self else { return }
+            completion?(finished)
+            self.isAllowedToCheckSectionTrait = true
+        }
     }
 
     /// 滚动容器到指定的头部/尾部视图控制器
@@ -217,7 +240,12 @@ public class NestedAdapter: NSObject, NestedContainerContext {
         case .footer:
             position = .footer
         }
-        currentContainerView.scrollView.scrollToPosition(position, animated: animated, completion: completion)
+        isAllowedToCheckSectionTrait = false
+        currentContainerView.scrollView.scrollToPosition(position, animated: animated) { [weak self] finished in
+            guard let self = self else { return }
+            completion?(finished)
+            self.isAllowedToCheckSectionTrait = true
+        }
     }
 
     /// 适配器刷新
@@ -268,15 +296,20 @@ public class NestedAdapter: NSObject, NestedContainerContext {
             completion?(false)
             return
         }
+        isAllowedToCheckSectionTrait = false
         let sections = findInvalidateSectionsAndUpdateContentTrait(targetSection)
         if sections.isEmpty {
             scrollViewDidScroll(currentContainerView.scrollView)
             completion?(true)
+            isAllowedToCheckSectionTrait = true
         } else {
-            currentContainerView.scrollView.invalidateLayout(in: sections) { [weak self] finished in
-                guard let self = self else { return }
-                self.scrollViewDidScroll(self.currentContainerView.scrollView)
-                completion?(finished)
+            UIView.performWithoutAnimation {
+                self.currentContainerView.scrollView.invalidateLayout(in: sections) { [weak self] finished in
+                    guard let self = self else { return }
+                    self.scrollViewDidScroll(self.currentContainerView.scrollView)
+                    completion?(finished)
+                    self.isAllowedToCheckSectionTrait = true
+                }
             }
         }
     }
@@ -286,8 +319,9 @@ public class NestedAdapter: NSObject, NestedContainerContext {
     ///   - headerFooterViewController: 需要配置的页眉/页脚视图控制器
     ///   - completion: 刷新回调
     private func queuedInvalidateLayout(in headerFooterViewController: NestedHeaderFooterViewController, completion: ((_ finished: Bool) -> Void)?) {
+        isAllowedToCheckSectionTrait = false
+        updateContentTrait()
         UIView.animate(withDuration: 0, delay: 0, options: [], animations: {
-            self.updateContentTrait()
             switch headerFooterViewController.style {
             case .header:
                 self.setHeaderView(headerFooterViewController)
@@ -297,18 +331,24 @@ public class NestedAdapter: NSObject, NestedContainerContext {
         }, completion: {
             self.scrollViewDidScroll(self.currentContainerView.scrollView)
             completion?($0)
+            self.isAllowedToCheckSectionTrait = true
         })
     }
 
     /// 容器尺寸发生变化
     func containerSizeDidChange() {
+        guard !isInSectionUpdateTransaction else { return }
+        isAllowedToCheckSectionTrait = false
         completionDispatcher.enterBatchUpdates()
         updateContentTrait()
-        uiDispatcher.dispatch { [weak self] in
-            guard let self = self else { return }
+        UIView.performWithoutAnimation {
             self.setHeaderView(self.headerController)
             self.setFooterView(self.footerController)
-            self.currentContainerView.scrollView.invalidateLayout(completion: nil)
+            self.currentContainerView.scrollView.invalidateLayout { [weak self] _ in
+                guard let self = self else { return }
+                self.scrollViewDidScroll(self.currentContainerView.scrollView)
+                self.isAllowedToCheckSectionTrait = true
+            }
         }
     }
 }
@@ -320,8 +360,8 @@ extension NestedAdapter {
     ///   - dataSource: 新数据源
     ///   - completion: 完成回调
     private func reload(dataSource: NestedAdapterDataSource, completion: ((_ finished: Bool) -> Void)?) {
+        isAllowedToCheckSectionTrait = false
         let map = sectionMap
-
         // 去重section标识Model数据
         let uniqueModels = SectionTrait.duplicateRemoved(dataSource.sectionModels(for: self))
 
@@ -342,6 +382,9 @@ extension NestedAdapter {
             self.scrollViewDidScroll(self.currentContainerView.scrollView)
             completion?(finished)
             self.completionDispatcher.exitBatchUpdates()
+            if !map.traits.isEmpty {
+                self.isAllowedToCheckSectionTrait = true
+            }
         })
     }
 
@@ -545,7 +588,32 @@ extension NestedAdapter {
     /// - Parameter lastEmbeddedMaxY: 嵌套内容合集最大底部偏移量
     private func updateScrollIndicator(_ lastEmbeddedMaxY: CGFloat) {
         let maxHeight = lastEmbeddedMaxY + (footerController?.headerFooterViewHeight() ?? 0)
-        scrollIndicator.contentHeightDidChange(maxHeight)
+        nestedContainerView?.contentHeightDidChange(maxHeight)
+    }
+
+    /// 检查特征数据
+    func checkContentTrait() {
+        guard allowedToCheckSectionTrait() else { return }
+        isAllowedToCheckSectionTrait = false
+        let sections = findInvalidateSectionsAndUpdateContentTrait(0)
+        if sections.isEmpty {
+            isAllowedToCheckSectionTrait = true
+        } else {
+            UIView.performWithoutAnimation {
+                self.currentContainerView.scrollView.invalidateLayout(in: sections) { [weak self] _ in
+                    guard let self = self else { return }
+                    self.scrollViewDidScroll(self.currentContainerView.scrollView)
+                    self.isAllowedToCheckSectionTrait = true
+                }
+            }
+        }
+    }
+
+    /// 检查是否允许执行检查节特性操作
+    /// - Returns: 返回布尔值，表示是否允许执行检查节特性操作
+    private func allowedToCheckSectionTrait() -> Bool {
+        guard let nestedContainerView = nestedContainerView else { return false }
+        return nestedContainerView.superview != nil && nestedContainerView.window != nil && isAllowedToCheckSectionTrait && allowedToCheckSectionTraitCondition()
     }
 }
 

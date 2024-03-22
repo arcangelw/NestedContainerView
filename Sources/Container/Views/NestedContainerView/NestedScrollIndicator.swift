@@ -79,8 +79,9 @@ final class NestedScrollIndicator: UIView {
     /// 内容高度发生变化时调用
     /// - Parameter height: 新的内容高度
     func contentHeightDidChange(_ height: CGFloat) {
-        contentHeight = max(height, bounds.height)
-
+        let height = max(height, bounds.height)
+        guard contentHeight != height else { return }
+        contentHeight = height
         guard contentHeight > 0 else { return }
 
         // 根据内容高度更新指示器的尺寸

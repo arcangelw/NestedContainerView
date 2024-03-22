@@ -23,7 +23,7 @@ public final class HeadedNestedAdapter: NestedAdapter {
     /// 表示是否自动显示嵌入滚动视图的滚动指示器
     public var automaticallyDisplayEmbeddedScrollIndicator: Bool = true {
         didSet {
-            currentContainerView.scrollIndicator.isHidden = automaticallyDisplayEmbeddedScrollIndicator
+            scrollIndicator.isHidden = automaticallyDisplayEmbeddedScrollIndicator
             scrollProcessor?.automaticallyDisplayEmbeddedScrollIndicator = automaticallyDisplayEmbeddedScrollIndicator
         }
     }
@@ -89,7 +89,7 @@ public final class HeadedNestedAdapter: NestedAdapter {
         super.setUpNestedContainerView(containerView)
         containerView.contentInsetAdjustmentBehavior = .never
         containerView.scrollView.bounces = !refreshHandledByEmbeddedScrollView
-        containerView.scrollIndicator.isHidden = automaticallyDisplayEmbeddedScrollIndicator
+        scrollIndicator.isHidden = automaticallyDisplayEmbeddedScrollIndicator
     }
 
     /// 适配器刷新
@@ -105,13 +105,13 @@ public final class HeadedNestedAdapter: NestedAdapter {
         invalidateLayout(in: headedContentController, completion: completion)
     }
 
-    /// 配置布局无效重置
+    /// 刷新headerView
     /// - Parameter completion: 回调
     public func reloadHeaderView(completion: ((Bool) -> Void)? = nil) {
         invalidateLayout(in: headedHeaderController, completion: completion)
     }
 
-    /// 配置布局无效重置
+    /// 刷新内容
     /// - Parameter completion: 回调
     public func reloadSectionLayout(completion: ((Bool) -> Void)? = nil) {
         invalidateLayout(in: headedContentController, completion: completion)
@@ -132,10 +132,8 @@ public final class HeadedNestedAdapter: NestedAdapter {
         } else {
             scrollProcessor?.headerViewPinHeight = 0
         }
-
         // 设置固定头部视图
         headedContentController.pinHeaderView = headedDataSource?.pinHeaderView(for: self)
-
         // 设置内容视图管理器
         headedContentController.management = headedDataSource?.contentViewManagement(for: self)
         // scrollProcessor?.management = headedContentController.management

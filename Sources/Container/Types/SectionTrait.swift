@@ -10,7 +10,7 @@ import Foundation
 // swiftlint:disable line_length
 
 /// `Section`特征信息。
-public final class SectionTrait: Hashable {
+public final class SectionTrait: Hashable, CustomDebugStringConvertible, CustomStringConvertible {
     /// Section模型。
     var model: AnySectionDifferentiable
 
@@ -36,6 +36,14 @@ public final class SectionTrait: Hashable {
     /// - Returns: 是否相等。
     public static func == (lhs: SectionTrait, rhs: SectionTrait) -> Bool {
         return lhs === rhs || lhs.model.isSectionEqual(to: rhs.model)
+    }
+
+    public var debugDescription: String {
+        return description
+    }
+
+    public var description: String {
+        return "SectionTrait(\(model)"
     }
 }
 

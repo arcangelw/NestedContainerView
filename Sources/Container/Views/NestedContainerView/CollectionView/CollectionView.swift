@@ -34,12 +34,11 @@ public final class CollectionView: UICollectionView, NestedContainerScrollView, 
     public var headerView: UIView? {
         didSet {
             defer {
-                collectionViewLayout.invalidateLayout()
+                // 设置headerView的高度为headerView的高度或0
+                // swiftlint:disable:next force_cast
+                (collectionViewLayout as! CollectionViewLayout).headerViewHeight = headerView?.frame.height ?? 0
             }
             oldValue?.removeFromSuperview()
-            // 设置headerView的高度为headerView的高度或0
-            // swiftlint:disable:next force_cast
-            (collectionViewLayout as! CollectionViewLayout).headerViewHeight = headerView?.frame.height ?? 0
             guard let headerView = headerView else { return }
             var frame = headerView.frame
             frame.origin = .zero
@@ -53,12 +52,11 @@ public final class CollectionView: UICollectionView, NestedContainerScrollView, 
     public var footerView: UIView? {
         didSet {
             defer {
-                collectionViewLayout.invalidateLayout()
+                // 设置footerView的高度为footerView的高度或0
+                // swiftlint:disable:next force_cast
+                (collectionViewLayout as! CollectionViewLayout).footerViewHeight = footerView?.frame.height ?? 0
             }
             oldValue?.removeFromSuperview()
-            // 设置footerView的高度为footerView的高度或0
-            // swiftlint:disable:next force_cast
-            (collectionViewLayout as! CollectionViewLayout).footerViewHeight = footerView?.frame.height ?? 0
             guard let footerView = footerView else { return }
             var frame = footerView.frame
             frame.origin.x = 0
@@ -71,7 +69,7 @@ public final class CollectionView: UICollectionView, NestedContainerScrollView, 
 
     /// 容器尺寸变化
     public var containerSizeDidChange: (() -> Void)?
-    private var containerSize: CGSize?
+    private var containerSize: CGSize
 
     /// 绑定的容器
     public private(set) weak var nestedContainerView: NestedContainerView?
@@ -103,8 +101,9 @@ public final class CollectionView: UICollectionView, NestedContainerScrollView, 
     private var scrollToPositionAnimatedCompletionBlock: (() -> Void)?
 
     /// 初始化方法
-    public init() {
-        super.init(frame: .zero, collectionViewLayout: .init())
+    public init(size: CGSize) {
+        self.containerSize = size
+        super.init(frame: .init(origin: .zero, size: size), collectionViewLayout: .init())
         let layout = CollectionViewLayout { [weak self] section, environment in
             guard let self = self else { return .empty }
             return createSectionLayout(section: section, environment: environment)
@@ -180,12 +179,12 @@ public final class CollectionView: UICollectionView, NestedContainerScrollView, 
     /// - Parameters:
     ///   - completion: 完成回调
     public func invalidateLayout(completion: ((_ finished: Bool) -> Void)?) {
-        CATransaction.begin()
-        CATransaction.setDisableActions(true)
+//        CATransaction.begin()
+//        CATransaction.setDisableActions(true)
         performBatchUpdates({
             self.collectionViewLayout.invalidateLayout()
         }, completion: completion)
-        CATransaction.commit()
+//        CATransaction.commit()
     }
 
     /// 使指定的一组 section 的布局失效并触发重置
@@ -196,19 +195,23 @@ public final class CollectionView: UICollectionView, NestedContainerScrollView, 
     public func invalidateLayout(in sections: [Int], completion: ((_ finished: Bool) -> Void)?) {
         var items: [IndexPath] = []
         for section in sections {
-            let count = numberOfItems(inSection: section)
-            items += (0 ..< count).map { IndexPath(item: $0, section: section) }
+            let sectionItems = numberOfItems(inSection: section)
+            items += (0 ..< sectionItems).map { IndexPath(item: $0, section: section) }
+        }
+        guard !items.isEmpty else {
+            completion?(false)
+            return
         }
         // swiftlint:disable:next force_cast
         let cls = type(of: collectionViewLayout).invalidationContextClass as! UICollectionViewLayoutInvalidationContext.Type
         let context = cls.init()
         context.invalidateItems(at: items)
-        CATransaction.begin()
-        CATransaction.setDisableActions(true)
+//        CATransaction.begin()
+//        CATransaction.setDisableActions(true)
         performBatchUpdates({
             self.collectionViewLayout.invalidateLayout(with: context)
         }, completion: completion)
-        CATransaction.commit()
+//        CATransaction.commit()
     }
 
     /// 滚动容器到指定位置
@@ -305,6 +308,8 @@ extension CollectionView {
         let header = find.delegate.nestedContainerView!(find.containerView, heightForHeaderInSection: section)
         let content = find.delegate.nestedContainerView!(find.containerView, heightForContentInSection: section)
         let footer = find.delegate.nestedContainerView!(find.containerView, heightForFooterInSection: section)
+
+        NestedLogger.shared.assert(content != .onePixel, "section:\(section) is onePixel")
 
         // 创建一个item
         let item = NSCollectionLayoutItem(layoutSize: .init(widthDimension: .fractionalWidth(1), heightDimension: .fractionalHeight(1)))

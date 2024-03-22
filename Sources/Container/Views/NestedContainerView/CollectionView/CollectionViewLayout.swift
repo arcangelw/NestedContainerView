@@ -10,9 +10,20 @@ import UIKit
 /// 自定义的CollectionView布局
 final class CollectionViewLayout: UICollectionViewCompositionalLayout {
     /// headerView的高度
-    var headerViewHeight: CGFloat = 0
+    var headerViewHeight: CGFloat = 0 {
+        didSet {
+            guard oldValue != headerViewHeight else { return }
+            invalidateLayout()
+        }
+    }
+
     /// footerView的高度
-    var footerViewHeight: CGFloat = 0
+    var footerViewHeight: CGFloat = 0 {
+        didSet {
+            guard oldValue != footerViewHeight else { return }
+            invalidateLayout()
+        }
+    }
 
     override var collectionViewContentSize: CGSize {
         var size = super.collectionViewContentSize

@@ -95,7 +95,11 @@ extension NestedAdapter: NestedContainerViewDelegate {
     ///   - section: 所在section
     /// - Returns: headerView高度
     func nestedContainerView(_: NestedContainerView, heightForHeaderInSection section: Int) -> CGFloat {
-        return sectionMap.trait(for: section)?.layoutAttributes.headerHeight ?? 0
+        guard let trait = sectionMap.trait(for: section) else {
+            NestedLogger.shared.assertionFailure("can not find section:\(section)")
+            return 0
+        }
+        return trait.layoutAttributes.headerHeight ?? 0
     }
 
     /// section节点内容View高度
@@ -104,7 +108,11 @@ extension NestedAdapter: NestedContainerViewDelegate {
     ///   - section: 所在section
     /// - Returns: contentView高度
     func nestedContainerView(_: NestedContainerView, heightForContentInSection section: Int) -> CGFloat {
-        return sectionMap.trait(for: section)?.layoutAttributes.contentHeight ?? 0
+        guard let trait = sectionMap.trait(for: section) else {
+            NestedLogger.shared.assertionFailure("can not find section:\(section)")
+            return 0
+        }
+        return trait.layoutAttributes.contentHeight
     }
 
     /// section节点悬浮footerView高度
@@ -113,7 +121,11 @@ extension NestedAdapter: NestedContainerViewDelegate {
     ///   - section: 所在section
     /// - Returns: footerView高度
     func nestedContainerView(_: NestedContainerView, heightForFooterInSection section: Int) -> CGFloat {
-        return sectionMap.trait(for: section)?.layoutAttributes.footerHeight ?? 0
+        guard let trait = sectionMap.trait(for: section) else {
+            NestedLogger.shared.assertionFailure("can not find section:\(section)")
+            return 0
+        }
+        return trait.layoutAttributes.footerHeight
     }
 
     // MARK: - Display
@@ -417,7 +429,8 @@ extension NestedAdapter {
     /// - Parameter scrollView: 容器
     func reloadScrollIndicator(_ scrollView: UIScrollView) {
         // 当前容器是否处于活跃状态
-        var isActive = scrollView.isTracking || scrollView.isDragging || scrollView.isDecelerating
+        var scrollingTrait = self.scrollingTrait
+
         // 容器有section展示 计算section 嵌套内容整体偏移
         // 容器没有section展示 场景对应footerView高度超过可视 取出最后一组section计算整体嵌套
         let lastSection = currentContainerView.scrollView.numberOfSections - 1
@@ -425,10 +438,12 @@ extension NestedAdapter {
         if section >= 0, let trait = sectionMap.trait(for: section) {
             let embeddedScrollView = sectionController(for: section)?.sectionEmbeddedScrollView()
             let offset = trait.layoutAttributes.indicatorOffset(scrollView, embeddedScrollView: embeddedScrollView)
-            isActive = isActive || embeddedScrollView.map { $0.isTracking || $0.isDragging || $0.isDecelerating } ?? false
-            scrollIndicator.didScroll(offset, isActive: isActive)
+            if let embeddedScrollView = embeddedScrollView {
+                scrollingTrait.merge(embeddedScrollView)
+            }
+            nestedContainerView?.didScroll(offset, scrollingTrait: scrollingTrait)
         } else {
-            scrollIndicator.didScroll(scrollView.contentOffset.y, isActive: isActive)
+            nestedContainerView?.didScroll(scrollView.contentOffset.y, scrollingTrait: scrollingTrait)
         }
     }
 }

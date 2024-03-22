@@ -34,6 +34,20 @@ open class NestedContainerView: UIView {
         }
     }
 
+    /// 内容尺寸
+    @objc
+    public private(set) dynamic
+    var contentSize: CGSize
+
+    /// 内容偏移量
+    @objc
+    public private(set) dynamic
+    var contentOffset: CGPoint = .zero
+
+    /// 滚动特征
+    public private(set) dynamic
+    var scrollingTrait: NestedContainerScrollingTrait
+
     /// 内置容器
     open class var containerScrollViewClass: NestedContainerScrollView.Type {
         return CollectionView.self
@@ -63,12 +77,16 @@ open class NestedContainerView: UIView {
 
     override public init(frame: CGRect) {
         var frame = frame
-        if frame.size == .zero {
-            frame.size = UIScreen.main.bounds.size
+        if frame.size.width.isZero {
+            frame.size.width = UIScreen.main.bounds.width
         }
-        self.scrollView = type(of: self).containerScrollViewClass.init()
+        if frame.size.height.isZero {
+            frame.size.height = UIScreen.main.bounds.height
+        }
+        self.scrollView = type(of: self).containerScrollViewClass.init(size: frame.size)
+        self.contentSize = .init(width: frame.width, height: 0)
+        self.scrollingTrait = .init(containerScrollView: scrollView)
         super.init(frame: frame)
-        scrollView.frame = bounds
         scrollView.bind(self)
         scrollView.containerSizeDidChange = { [weak self] in
             self?.nestedAdapter?.containerSizeDidChange()
@@ -94,5 +112,50 @@ open class NestedContainerView: UIView {
     @available(*, unavailable)
     public required init?(coder _: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+
+    override open func layoutSubviews() {
+        super.layoutSubviews()
+        if contentSize.width != bounds.width {
+            contentSize.width = bounds.width
+        }
+    }
+
+    /// 内容滚动时调用
+    /// - Parameters:
+    ///   - offset: 偏移量
+    ///   - isActive: 滚动特征参数
+    func didScroll(_ offset: CGFloat, scrollingTrait: NestedContainerScrollingTrait) {
+        if contentOffset.y != offset {
+            contentOffset.y = offset
+        }
+        if self.scrollingTrait != scrollingTrait {
+            self.scrollingTrait = scrollingTrait
+        }
+        let isActive = scrollingTrait.isTracking || scrollingTrait.isDragging || scrollingTrait.isDecelerating
+        scrollIndicator.didScroll(offset, isActive: isActive)
+    }
+
+    /// 内容高度发生变化时调用
+    /// - Parameter height: 新的内容高度
+    func contentHeightDidChange(_ height: CGFloat) {
+        if contentSize.height != height {
+            contentSize.height = height
+        }
+        scrollIndicator.contentHeightDidChange(height)
+    }
+}
+
+/// 使用UICollectionView的嵌套容器
+public class NestedContainerUsingUICollectionView: NestedContainerView {
+    override public class var containerScrollViewClass: any NestedContainerScrollView.Type {
+        return CollectionView.self
+    }
+}
+
+/// 使用UITableView的嵌套容器
+public class NestedContainerUsingUITableView: NestedContainerView {
+    override public class var containerScrollViewClass: any NestedContainerScrollView.Type {
+        return TableView.self
     }
 }

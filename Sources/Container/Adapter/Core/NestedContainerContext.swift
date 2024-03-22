@@ -12,6 +12,8 @@ import UIKit
 /// 嵌套容器适配器上下文信息
 /// 这里不需要将实现细节对外暴露，提供一个协议接口给相关控制器调用
 public protocol NestedContainerContext: AnyObject {
+    /// 绑定的嵌套容器
+    var nestedContainerView: NestedContainerView? { get }
     /// 当前适配器所在的控制器
     var viewController: UIViewController? { get }
     /// 容器的尺寸

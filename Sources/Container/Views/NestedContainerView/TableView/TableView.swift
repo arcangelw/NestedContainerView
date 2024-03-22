@@ -58,7 +58,7 @@ public final class TableView: UITableView, NestedContainerScrollView, UIGestureR
 
     /// 容器尺寸变化
     public var containerSizeDidChange: (() -> Void)?
-    private var containerSize: CGSize?
+    private var containerSize: CGSize
 
     /// 绑定的嵌套容器
     public private(set) weak var nestedContainerView: NestedContainerView?
@@ -67,8 +67,9 @@ public final class TableView: UITableView, NestedContainerScrollView, UIGestureR
     private var scrollToPositionAnimatedCompletionBlock: (() -> Void)?
 
     /// 初始化方法
-    public init() {
-        super.init(frame: .zero, style: .plain)
+    public init(size: CGSize) {
+        self.containerSize = size
+        super.init(frame: .init(origin: .zero, size: size), style: .plain)
         backgroundColor = .clear
         bounces = true
         alwaysBounceVertical = true
@@ -140,10 +141,10 @@ public final class TableView: UITableView, NestedContainerScrollView, UIGestureR
 //        }, completion: {
 //            completion?($0)
 //        })
-        CATransaction.begin()
-        CATransaction.setDisableActions(true)
+//        CATransaction.begin()
+//        CATransaction.setDisableActions(true)
         performBatchUpdates(nil, completion: completion)
-        CATransaction.commit()
+//        CATransaction.commit()
     }
 
     /// 使指定的一组 section 的布局失效并触发重置
@@ -157,10 +158,10 @@ public final class TableView: UITableView, NestedContainerScrollView, UIGestureR
 //        }, completion: {
 //            completion?($0)
 //        })
-        CATransaction.begin()
-        CATransaction.setDisableActions(true)
+//        CATransaction.begin()
+//        CATransaction.setDisableActions(true)
         performBatchUpdates(nil, completion: completion)
-        CATransaction.commit()
+//        CATransaction.commit()
     }
 
     /// 滚动容器到指定位置

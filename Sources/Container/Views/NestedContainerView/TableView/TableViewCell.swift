@@ -33,10 +33,10 @@ final class TableViewCell: UITableViewCell {
             contentView.addSubview(view)
         }
         // 确保cell的大小已经确定
-        guard contentView.bounds.size != .zero else { return }
+        guard bounds.size != .zero else { return }
         // 如果内容视图的frame不等于cell的bounds，则将其调整为cell的bounds
-        if view.frame != contentView.bounds {
-            view.frame = contentView.bounds
+        if view.frame != bounds {
+            view.frame = bounds
         }
     }
 
@@ -44,8 +44,8 @@ final class TableViewCell: UITableViewCell {
     override func layoutSubviews() {
         super.layoutSubviews()
         // 如果内容视图的frame不等于cell的bounds，则将其调整为cell的bounds
-        if bindView?.frame != contentView.bounds {
-            bindView?.frame = contentView.bounds
+        if bindView?.frame != bounds {
+            bindView?.frame = bounds
         }
     }
 }
